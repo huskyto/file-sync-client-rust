@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use crate::{model::FileDefinition, util::Util};
+use crate::{model::{ChangePatch, FileDefinition}, util::Util};
 
 
 pub struct SyncService;
@@ -78,6 +78,27 @@ impl SyncService {
             Ok(res) => {
                 if res.status() == 202 {
                     Ok(true)
+                }
+                else {
+                    Err("Wrong status".to_string())
+                }
+            },
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    pub fn get_patch(rev: u64, file_list: Vec<FileDefinition>) -> Result<ChangePatch, String> {
+        let url = Util::build_url(&format!("api/v1/patch/{rev}"));
+        let client = reqwest::blocking::Client::new();
+        let js = serde_json::to_string(&file_list).expect("Serialization error.");
+        match client.post(url)
+                .body(js)
+                .header("Content-Type", "application/json")
+                .send() {
+            Ok(res) => {
+                if res.status() == 200 {
+                    let change_patch: ChangePatch = res.json().expect("Deserialization error!");
+                    Ok(change_patch)
                 }
                 else {
                     Err("Wrong status".to_string())

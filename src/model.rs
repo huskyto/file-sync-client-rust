@@ -67,11 +67,6 @@ pub struct ChangePatch {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct RevisionHistory {
-    pub revisions: Vec<FileChange>
-}
-
-#[derive(Serialize, Deserialize)]
 pub enum ChangeType {
     Create,
     Update,
