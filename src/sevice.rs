@@ -1,6 +1,7 @@
-use serde_json::json;
 
-use crate::{model::{ChangePatch, FileDefinition}, util::Util};
+use crate::util::Util;
+use crate::model::ChangePatch;
+use crate::model::FileDefinition;
 
 
 pub struct SyncService;

@@ -57,6 +57,16 @@ impl FileDefinition {
             last_update: Some(last_update),
         }
     }
+    pub fn new_full_no_id(name: String, path: String, size: u64, checksum: String, last_update: SystemTime) -> Self {
+        Self {
+            name,
+            path,
+            id: None,
+            size: Some(size),
+            checksum: Some(checksum),
+            last_update: Some(last_update),
+        }
+    }
     pub fn validate(&self) -> bool {
         self.id.is_some() && !self.name.is_empty() && !self.path.is_empty()
     }
