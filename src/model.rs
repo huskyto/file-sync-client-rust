@@ -70,6 +70,13 @@ impl FileDefinition {
     pub fn validate(&self) -> bool {
         self.id.is_some() && !self.name.is_empty() && !self.path.is_empty()
     }
+    pub fn set_to(&mut self, other: &FileDefinition) {
+        self.name = other.name.clone();
+        self.path = other.path.clone();
+        self.size = other.size;
+        self.checksum = other.checksum.clone();
+        self.last_update = other.last_update;
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -117,4 +124,19 @@ impl FileData {
 pub struct LocalState {
     pub revision: u64,
     pub files: Vec<FileDefinition>
+}
+impl LocalState {
+    pub fn remove_file(&mut self, fd: &FileDefinition) {
+        self.files.retain(|f| f.id != fd.id);
+    }
+    pub fn add_file(&mut self, fd: &FileDefinition) {
+        self.files.push(fd.clone());
+    }
+    pub fn update_file(&mut self, fd: &FileDefinition) {
+        let opt_f = self.files.iter_mut()
+                .find(|f| f.id == fd.id);
+        if let Some(f) = opt_f {
+            f.set_to(fd);
+        }
+    }
 }

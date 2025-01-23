@@ -4,6 +4,7 @@ use std::fs::ReadDir;
 use std::path::Path;
 use std::collections::HashMap;
 
+use crate::sevice::SyncService;
 use crate::util::Util;
 use crate::config::Config;
 use crate::model::ChangeType;
@@ -48,9 +49,7 @@ impl StateManager {
             if Util::have_changed(&fsd, m_fd) {
                 res.push(FileChange::new(fsd.clone(), ChangeType::Update));
             }
-            else {
-                defs_map.remove(m_fd.id.as_ref().unwrap());
-            }
+            defs_map.remove(m_fd.id.as_ref().unwrap());
         }
 
         for res_fd in defs_map.values() {
@@ -79,12 +78,12 @@ impl StateManager {
         for f in rd {
             let path = f.unwrap().path();
             if path.is_dir() {
-                if path.file_name().unwrap() == ".sync-state" { continue }
                 let sub_folder = fs::read_dir(path).unwrap();
                 Self::materialize_dir_defs(sub_folder).iter()
                         .for_each(|sp| res.push(sp.to_string()));
             }
             else {
+                if path.file_name().unwrap() == ".sync-state" { continue }
                 res.push(path.to_str().unwrap().to_string());
             }
         }
@@ -116,5 +115,51 @@ impl StateManager {
             },
             Err(e) => Err(e),
         }
+    }
+
+    pub fn do_local_sync(&mut self) {
+        let changes = self.get_changes();
+        println!("Changes {:#?}", changes);
+        for change in changes {
+            match change.change {
+                ChangeType::Create => {
+                    let res = SyncService::create_empty(&change.file);
+                    match res {
+                        Ok(fd) => {
+                            self.local_state.add_file(&fd);
+                            let res = SyncService::update_file_fd(&fd);
+                            match res {
+                                Ok(_) => {
+                                    // self.local_state.update_file(fd);
+                                },
+                                Err(e) => println!("Error on update: {e}"),
+                            }
+                        },
+                        Err(e) => println!("Error on create: {e}")
+                    }
+                },
+                ChangeType::Update => {
+                    let res = SyncService::update_file_fd(&change.file);
+                    match res {
+                        Ok(_) => {
+                            // self.local_state.update_file(fd);
+                        },
+                        Err(e) => println!("Error on update: {e}"),
+                    }
+                },
+                ChangeType::Delete => {
+                    let file_id = change.file.id.as_ref().unwrap();
+                    let res = SyncService::delete_file(file_id);
+                    match res {
+                        Ok(_) => {
+                            self.local_state.remove_file(&change.file);
+                        },
+                        Err(e) => println!("Error on delete: {e}"),
+                    }
+                },
+            }
+        }
+
+        let _ = self.save_state();
     }
 }
