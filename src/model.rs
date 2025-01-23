@@ -1,17 +1,20 @@
 
-use serde::Deserialize;
+use std::time::SystemTime;
+
 use serde::Serialize;
+use serde::Deserialize;
 
 // From Server Project!
 // TODO find a better way to sync.
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FileDefinition {
     pub name: String,
     pub path: String,
     pub id: Option<String>,
     pub size: Option<u64>,
-    pub checksum: Option<String>
+    pub checksum: Option<String>,
+    pub last_update: Option<SystemTime>
 }
 impl FileDefinition {
     pub fn new(name: String, path: String) -> Self {
@@ -21,6 +24,7 @@ impl FileDefinition {
             id: None,
             size: None,
             checksum: None,
+            last_update: None
         }
     }
     pub fn with_id(id: String, name: String, path: String) -> Self {
@@ -30,6 +34,7 @@ impl FileDefinition {
             id: Some(id),
             size: None,
             checksum: None,
+            last_update: None
         }
     }
     pub fn with_checksum(id: String, name: String, path: String, checksum: String) -> Self {
@@ -39,6 +44,17 @@ impl FileDefinition {
             id: Some(id),
             size: None,
             checksum: Some(checksum),
+            last_update: None
+        }
+    }
+    pub fn new_full(id: String, name: String, path: String, size: u64, checksum: String, last_update: SystemTime) -> Self {
+        Self {
+            name,
+            path,
+            id: Some(id),
+            size: Some(size),
+            checksum: Some(checksum),
+            last_update: Some(last_update),
         }
     }
     pub fn validate(&self) -> bool {
@@ -46,7 +62,7 @@ impl FileDefinition {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FileChange {
     pub file: FileDefinition,
     pub change: ChangeType
@@ -66,7 +82,7 @@ pub struct ChangePatch {
     pub changes: Vec<FileChange>
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum ChangeType {
     Create,
     Update,
@@ -85,4 +101,10 @@ impl FileData {
             content,
         }
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct LocalState {
+    pub revision: u64,
+    pub files: Vec<FileDefinition>
 }
