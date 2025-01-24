@@ -1,5 +1,6 @@
 
 use std::path::Path;
+use xxhash_rust::xxh3;
 
 use crate::model::FileDefinition;
 use crate::config::Config;
@@ -52,7 +53,7 @@ impl Util {
         (path, name)
     }
     pub fn checksum(content: &[u8]) -> String {
-        let digest = md5::compute(content);
+        let digest = xxh3::xxh3_64(content);
         format!("{:x}", digest)
     }
     pub fn have_changed(a: &FileDefinition, b: &FileDefinition) -> bool{
