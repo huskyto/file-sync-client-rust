@@ -47,7 +47,7 @@ impl Util {
 
         (path, name)
     }
-    pub fn checksum(content: &Vec<u8>) -> String {
+    pub fn checksum(content: &[u8]) -> String {
         let digest = md5::compute(content);
         format!("{:x}", digest)
     }

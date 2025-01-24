@@ -103,7 +103,8 @@ impl SyncService {
                     Ok(change_patch)
                 }
                 else {
-                    Err("Wrong status".to_string())
+                    let e = res.text().unwrap();
+                    Err(format!("Wrong status: {e}"))
                 }
             },
             Err(e) => Err(e.to_string()),

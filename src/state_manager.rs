@@ -117,49 +117,56 @@ impl StateManager {
         }
     }
 
+            // TODO remove pub
     pub fn do_local_sync(&mut self) {
         let changes = self.get_changes();
         println!("Changes {:#?}", changes);
         for change in changes {
             match change.change {
-                ChangeType::Create => {
-                    let res = SyncService::create_empty(&change.file);
-                    match res {
-                        Ok(fd) => {
-                            self.local_state.add_file(&fd);
-                            let res = SyncService::update_file_fd(&fd);
-                            match res {
-                                Ok(_) => {
-                                    // self.local_state.update_file(fd);
-                                },
-                                Err(e) => println!("Error on update: {e}"),
-                            }
-                        },
-                        Err(e) => println!("Error on create: {e}")
-                    }
-                },
-                ChangeType::Update => {
-                    let res = SyncService::update_file_fd(&change.file);
-                    match res {
-                        Ok(_) => {
-                            // self.local_state.update_file(fd);
-                        },
-                        Err(e) => println!("Error on update: {e}"),
-                    }
-                },
-                ChangeType::Delete => {
-                    let file_id = change.file.id.as_ref().unwrap();
-                    let res = SyncService::delete_file(file_id);
-                    match res {
-                        Ok(_) => {
-                            self.local_state.remove_file(&change.file);
-                        },
-                        Err(e) => println!("Error on delete: {e}"),
-                    }
-                },
+                ChangeType::Create => self.sync_create_file(&change),
+                ChangeType::Update => self.sync_update_file(&change),
+                ChangeType::Delete => self.sync_delete_file(&change),
+                ChangeType::DoDownload => { }, // noop locally
+                ChangeType::DoUpload => { }, // noop locally
             }
         }
 
         let _ = self.save_state();
+    }
+
+
+    fn sync_create_file(&mut self, change: &FileChange) {
+        let res = SyncService::create_empty(&change.file);
+        match res {
+            Ok(fd) => {
+                self.local_state.add_file(&fd);
+                let res = SyncService::update_file_fd(&fd);
+                match res {
+                    Ok(_) => { },
+                    Err(e) => println!("Error on update: {e}"),
+                }
+            },
+            Err(e) => println!("Error on create: {e}")
+        }
+    }
+    fn sync_update_file(&mut self, change: &FileChange) {
+        let res = SyncService::update_file_fd(&change.file);
+        match res {
+            Ok(_) => {
+                self.local_state.update_file(&change.file);
+            },
+            Err(e) => println!("Error on update: {e}"),
+        }
+    }
+    fn sync_delete_file(&mut self, change: &FileChange) {
+        let file_id = change.file.id.as_ref().unwrap();
+        let res = SyncService::delete_file(file_id);
+        match res {
+            Ok(_) => {
+                self.local_state.remove_file(&change.file);
+            },
+            Err(e) => println!("Error on delete: {e}"),
+        }
+    }
     }
 }
