@@ -134,6 +134,47 @@ impl StateManager {
         let _ = self.save_state();
     }
 
+            // TODO remove pub
+    pub fn do_remote_sync(&mut self) {
+        let local_fs_defs = self.get_local_file_definitions();
+        let patch_res = SyncService::get_patch(self.get_revision(), local_fs_defs);
+        if let Err(e) = patch_res {
+            println!("Remote sync failed to retrieve patch: {e}");
+            return;
+        }
+        let patch = patch_res.unwrap();
+        println!("Remote changes {:#?}", patch);
+
+        for change in patch.changes {
+            match change.change {
+                ChangeType::Create => self.sync_create_file(&change),
+                ChangeType::Update => { },  // Noop. Dos handle it.
+                ChangeType::Delete => self.sync_delete_local_file(&change),
+                ChangeType::DoDownload => self.sync_download_file(&change),
+                ChangeType::DoUpload => self.sync_upload_file(&change),
+            }
+        }
+
+        self.local_state.revision = patch.revision;
+        let _ = self.save_state();
+
+            // Check if it's in sync, and update rev number:
+        let local_fs_defs = self.get_local_file_definitions();
+        let patch_res = SyncService::get_patch(self.get_revision(), local_fs_defs);
+        if let Err(e) = patch_res {
+            println!("Remote sync failed to retrieve 2nd patch: {e}");
+            return;
+        }
+        let patch = patch_res.unwrap();
+        if !patch.changes.is_empty() {
+            println!("Still out of sync after update with remote_sync!")
+        }
+        else {
+            self.local_state.revision = patch.revision;
+            let _ = self.save_state();
+        }
+    }
+
 
     fn sync_create_file(&mut self, change: &FileChange) {
         let res = SyncService::create_empty(&change.file);
@@ -168,5 +209,33 @@ impl StateManager {
             Err(e) => println!("Error on delete: {e}"),
         }
     }
+    fn sync_download_file(&mut self, change: &FileChange) {
+        let res = SyncService::get_file(&change.file);
+        match res {
+            Ok(data) => {
+                let write_success = Util::write_file_content(&data, &change.file);
+                if write_success {
+                    self.local_state.add_or_update_file(&change.file);
+                }
+            },
+            Err(e) => println!("Error on file download: {e}"),
+        }
+    }
+    fn sync_upload_file(&mut self, change: &FileChange) {
+        let res = SyncService::update_file_fd(&change.file);
+        match res {
+            Ok(_) => {
+                self.local_state.update_file(&change.file);
+            },
+            Err(e) => println!("Error on file upload: {e}"),
+        }
+    }
+    fn sync_delete_local_file(&mut self, change: &FileChange) {
+        self.local_state.files.retain(|f| f.id != change.file.id);
+        let full_path = Util::full_path(&change.file);
+        let del_res = std::fs::remove_file(&full_path);
+        if let Err(e) = del_res {
+            println!("[Error] Error deleting local file: {}", &full_path)
+        }
     }
 }

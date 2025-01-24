@@ -4,8 +4,8 @@ use std::time::SystemTime;
 use serde::Serialize;
 use serde::Deserialize;
 
-// From Server Project!
-// TODO find a better way to sync.
+use crate::util::Util;
+
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FileDefinition {
@@ -93,7 +93,7 @@ impl FileChange {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ChangePatch {
     pub revision: u64,
     pub changes: Vec<FileChange>
@@ -103,7 +103,9 @@ pub struct ChangePatch {
 pub enum ChangeType {
     Create,
     Update,
-    Delete
+    Delete,
+    DoDownload,
+    DoUpload
 }
 
 #[derive(Serialize, Deserialize)]
@@ -137,6 +139,26 @@ impl LocalState {
                 .find(|f| f.id == fd.id);
         if let Some(f) = opt_f {
             f.set_to(fd);
+        }
+    }
+    pub fn add_or_update_file(&mut self, fd: &FileDefinition) {
+        let current = self.files
+                .iter_mut()
+                .find(|f| f.id == fd.id);
+        match current {
+            Some(f) => f.set_to(fd),
+            None => self.add_file(fd),
+        }
+    }
+    pub fn update_file_with_data(&mut self, old_fs: &FileDefinition, data: &[u8]) {
+        let current = self.files
+                .iter_mut()
+                .find(|f| f.id == old_fs.id);
+        match current {
+            Some(f) => {
+                f.checksum = Some(Util::checksum(data));
+            },
+            None => println!("[Error] Tried to data-update file to non-existant definition."),
         }
     }
 }

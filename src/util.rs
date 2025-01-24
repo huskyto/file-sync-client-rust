@@ -24,6 +24,10 @@ impl Util {
     pub fn read_file_content(local_path: &str) -> Vec<u8> {
         std::fs::read(local_path).expect("Failed to read local file")
     }
+    pub fn write_file_content(data: &[u8], fd: &FileDefinition) -> bool {
+        let path = Self::full_path(fd);
+        std::fs::write(path, data).is_ok()
+    }
     pub fn get_local_file_definition(full_path: &str) -> Option<FileDefinition> {
         let stripped_path = Path::new(full_path)
                 .strip_prefix(Config::get_base_path())
