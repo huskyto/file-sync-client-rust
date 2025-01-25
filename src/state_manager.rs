@@ -235,7 +235,7 @@ impl StateManager {
         let full_path = Util::full_path(&change.file);
         let del_res = std::fs::remove_file(&full_path);
         if let Err(e) = del_res {
-            println!("[Error] Error deleting local file: {}", &full_path)
+            println!("[Error] Error deleting local file: {} - {}", &full_path, e)
         }
     }
 }

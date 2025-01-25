@@ -4,8 +4,6 @@ use std::time::SystemTime;
 use serde::Serialize;
 use serde::Deserialize;
 
-use crate::util::Util;
-
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FileDefinition {
@@ -27,36 +25,6 @@ impl FileDefinition {
             last_update: None
         }
     }
-    pub fn with_id(id: String, name: String, path: String) -> Self {
-        Self {
-            name,
-            path,
-            id: Some(id),
-            size: None,
-            checksum: None,
-            last_update: None
-        }
-    }
-    pub fn with_checksum(id: String, name: String, path: String, checksum: String) -> Self {
-        Self {
-            name,
-            path,
-            id: Some(id),
-            size: None,
-            checksum: Some(checksum),
-            last_update: None
-        }
-    }
-    pub fn new_full(id: String, name: String, path: String, size: u64, checksum: String, last_update: SystemTime) -> Self {
-        Self {
-            name,
-            path,
-            id: Some(id),
-            size: Some(size),
-            checksum: Some(checksum),
-            last_update: Some(last_update),
-        }
-    }
     pub fn new_full_no_id(name: String, path: String, size: u64, checksum: String, last_update: SystemTime) -> Self {
         Self {
             name,
@@ -66,9 +34,6 @@ impl FileDefinition {
             checksum: Some(checksum),
             last_update: Some(last_update),
         }
-    }
-    pub fn validate(&self) -> bool {
-        self.id.is_some() && !self.name.is_empty() && !self.path.is_empty()
     }
     pub fn set_to(&mut self, other: &FileDefinition) {
         self.name = other.name.clone();
@@ -113,14 +78,6 @@ pub struct FileData {
     pub definition: FileDefinition,
     pub content: Vec<u8>,
 }
-impl FileData {
-    pub fn new(definition: FileDefinition, content: Vec<u8>) -> Self {
-        Self {
-            definition,
-            content,
-        }
-    }
-}
 
 #[derive(Serialize, Deserialize)]
 pub struct LocalState {
@@ -148,17 +105,6 @@ impl LocalState {
         match current {
             Some(f) => f.set_to(fd),
             None => self.add_file(fd),
-        }
-    }
-    pub fn update_file_with_data(&mut self, old_fs: &FileDefinition, data: &[u8]) {
-        let current = self.files
-                .iter_mut()
-                .find(|f| f.id == old_fs.id);
-        match current {
-            Some(f) => {
-                f.checksum = Some(Util::checksum(data));
-            },
-            None => println!("[Error] Tried to data-update file to non-existant definition."),
         }
     }
 }

@@ -34,7 +34,6 @@ impl SyncService {
     pub fn update_file_fd(file_definition: &FileDefinition) -> Result<bool, String> {
         let local_path = Util::full_path(file_definition);
         let file_id = file_definition.clone().id.expect("No id in File Definition");
-        println!("Local path: {local_path}");
         let content = std::fs::read(local_path).expect("Failed to read local file");
         let url = Util::build_url(&format!("api/v1/file/{file_id}"));
         let client = reqwest::blocking::Client::new();
